@@ -1,0 +1,85 @@
+---
+title: "a2_task1_ingman_gabriel"
+author: "Gabriel Ingman"
+format: 
+  html:
+    code-fold: show
+    toc: true
+    number-sections: false
+    embed-resources: true
+editor: visual
+theme: pulse
+execute:
+  echo: true
+  message: false
+  warning: false
+---
+
+# Assignment 2, Task 1
+
+## Load in libraries and data
+
+```{r setuplibraries}
+
+
+library(tidyverse)
+library(here)
+library(sf)
+library(tmap)
+library(spatstat)
+```
+
+```{r data}
+
+ca_countyborder_sf <- read_sf(here('data', 'CA_Counties'), layer = 'CA_Counties_TIGER2016') %>%
+  janitor::clean_names()
+
+oilspill_df <- read_csv(
+  here('data', 'Oil_Spill_Incident_Tracking_[ds394].csv')) %>% 
+  janitor::clean_names()
+
+```
+
+## Exploratory Interactive Map
+
+```{r}
+
+# Converting the Oil Spill dataframe into a shapefile so it can interact with the county border shapefile
+
+oilspillshape_sf <- oilspill_df %>% 
+  drop_na(x, y) %>% 
+  st_as_sf(coords = c("x", "y"))
+
+```
+
+```{r}
+
+
+# Checking the CRS of county border file
+st_crs(ca_counties_sf) #ID  ["EPSG", 3857]
+
+# Set Oil Spill shapefile CRS to CRS of the county border file.
+st_crs(oilspillshape_sf) <- 3857
+
+```
+
+```{r interactivemap}
+
+tmap_mode(mode = 'view')
+
+#Created the map with the Go Gauchos color scheme.
+tm_shape(ca_countyborder_sf) +
+  tm_fill(col = "cornflowerblue") +
+  tm_shape(oilspillshape_sf) +
+  tm_dots(col = "gold2")
+```
+
+## Static Cloropleth (Color Theme) Map
+
+```{r}
+
+
+
+```
+
+## 
