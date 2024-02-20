@@ -21,7 +21,66 @@ library(tidyverse)
 library(tidytext)
 library(pdftools)
 library(ggwordcloud)
+library(here)
 
 ```
 
-\![\] (data/hyperion_cover.jpg){fig-align = 'center'}
+# Assignment 2, Task 2
+
+![**Hyperion**](data/hyperion_cover.jpg){fig-align="center"}
+
+## Overview and Data Summary
+
+This task is an exercise in text analysis. We were instructed to find our own text from the internet, analyse the entire text for its most common words (excluding stop words), and then perform a sentiment analysis.
+
+The data for this task comes from Dan Simmon's 1989 novel *Hyperion*. This is one of my favorite science fiction novels. It's one of the most vivid and imaginative science fiction novels of all time, and yet, it's also one of the most brilliant adaptations of Chaucer's *The Canterbury Tales* ever written. Warning: this book is twisted. It covers with a wide range of topics: war, religion, zealotry, technology, aristocracy, time travel, and colonialism. It was also written in the eighties.
+
+```{r textsetup}
+
+hyperion_text <- pdftools::pdf_text(here('data', 'hyperion.pdf'))
+
+```
+
+```{r textdataframe}
+
+hyperion_lines <- data.frame(hyperion_text) %>% 
+  mutate(page = 1:n()) %>%
+  mutate(text_full = str_split(hyperion_text, pattern = '\\n')) %>% 
+  unnest(text_full) %>% 
+  mutate(text_full = str_trim(text_full)) 
+
+# Followed along with the code from the lab to turn my book into a dataframe.
+
+```
+
+```{r}
+
+hyperion_booktext <- hyperion_lines %>% 
+  slice(-(1:178))
+
+hyperion_prologue <- hyperion_booktext %>% 
+  slice(-(10:16))
+
+hyperion_chapter1 <- hyperion_booktext %>% 
+  slice(-(17:123))
+
+hyperion_chapter2 <- hyperion_booktext %>% 
+  slice(-(122:206))
+
+hyperion_chapter3 <- hyperion_booktext %>% 
+  slice(-(207:271))
+
+hyperion_chapter4 <- hyperion_booktext %>% 
+  slice(-(272:359))
+
+hyperion_chapter5 <- hyperion_booktext %>% 
+  slice(-(360:471))
+
+hyperion_chapter6 <- hyperion_booktext %>% 
+  slice(-(17:123))
+
+hyperion_epilogue <- hyperion_booktext %>% 
+  slice(-(17:123))
+
+
+```
