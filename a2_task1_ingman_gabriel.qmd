@@ -17,7 +17,15 @@ execute:
 
 # Assignment 2, Task 1
 
-## Load in libraries and data
+## Overview
+
+The dataset for this task is California oil spill tracking data from in 2008, stored in a CSV file, and California county borders, stored as a ShapeFile.
+
+The purpose of this task is to analyze the oil spill tracking data and plot the spill incidents on the CA county ShapeFileas an interactive map. Then, the second part of the task is to create a cloropleth or 'heatmap' showing which counties were the worst affected by oil spill incidents in 2008.
+
+I accomplished the first part of this task- the interactive oil spill incident map- in three steps. First, I converted the oil spill incident CSV into a ShapeFileso I could display the information spatially. Then, I matched up the new oil spill ShapeFile's CRS code to the one in the CA county file so they would align on the map. Finally, I used the T_Map package to create an interactive map.
+
+I accomplished the second part of the task by creating a merged ShapeFile with both the oil spill incident and county boundary ShapeFiles. Then, I made a new ShapeFile, storing only the total count of oil spill incidents by county. I then used a custom gradient color scheme to differentiate the low oil spill incident count counties from the ones with a high oil spill incident count.
 
 ```{r setuplibraries}
 
@@ -71,14 +79,38 @@ tmap_mode(mode = 'view')
 tm_shape(ca_countyborder_sf) +
   tm_fill(col = "cornflowerblue") +
   tm_shape(oilspillshape_sf) +
-  tm_dots(col = "gold2")
+  tm_dots(col = "gold2")+
+  tm_layout(title = "Oil Spills in California, 2008", inner.margins = c(0,0,.1,0), title.size = 8)
+
+
 ```
+
+Click a point to reveal more information: date, time, location, object ID, latitude and longitude.
 
 ## Static Cloropleth (Color Theme) Map
 
-```{r}
+```{r oneshapeonelove}
 
+#First, create a unified shapefile for both the oil spills and the CA county borders.
 
+CAcounties_oilspills_sf <- st_join(ca_countyborder_sf, oilspillshape_sf)
+
+#Then, count the number of oil spills in each county.
+
+oilspill_count_sf <- CAcounties_oilspills_sf %>% 
+  group_by(name) %>% 
+  summarize(oil_count = n())
+
+```
+
+```{r plottingoilspills}
+
+ggplot(oilspill_count_sf) +
+  geom_sf(aes(oil_count)) +
+  scale_fill_gradientn(
+    colors = c("#E8ECE4","#EAD9BA", "#ECC78F", "#EEB465", "#DD3D0C")
+    ) +
+  theme_void()
 
 ```
 
