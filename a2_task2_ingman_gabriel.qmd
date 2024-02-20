@@ -1,0 +1,27 @@
+---
+title: "a2_task2_ingman_gabriel"
+author: "Gabriel Ingman"
+format: 
+  html:
+    code-fold: show
+    toc: true
+    number-sections: false
+    embed-resources: true
+editor: visual
+theme: quartz
+execute:
+  echo: true
+  message: false
+  warning: false
+---
+
+```{r setup}
+
+library(tidyverse)
+library(tidytext)
+library(pdftools)
+library(ggwordcloud)
+
+```
+
+\![\] (data/hyperion_cover.jpg){fig-align = 'center'}

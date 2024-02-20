@@ -8,7 +8,6 @@ format:
     number-sections: false
     embed-resources: true
 editor: visual
-theme: pulse
 execute:
   echo: true
   message: false
@@ -27,6 +26,8 @@ I accomplished the first part of this task- the interactive oil spill incident m
 
 I accomplished the second part of the task by creating a merged ShapeFile with both the oil spill incident and county boundary ShapeFiles. Then, I made a new ShapeFile, storing only the total count of oil spill incidents by county. I then used a custom gradient color scheme to differentiate the low oil spill incident count counties from the ones with a high oil spill incident count.
 
+I will be doing the optional third task.
+
 ```{r setuplibraries}
 
 
@@ -35,6 +36,7 @@ library(here)
 library(sf)
 library(tmap)
 library(spatstat)
+library(patchwork)
 ```
 
 ```{r data}
@@ -64,7 +66,7 @@ oilspillshape_sf <- oilspill_df %>%
 
 
 # Checking the CRS of county border file
-st_crs(ca_counties_sf) #ID  ["EPSG", 3857]
+#st_crs(ca_counties_sf) #ID  ["EPSG", 3857]
 
 # Set Oil Spill shapefile CRS to CRS of the county border file.
 st_crs(oilspillshape_sf) <- 3857
@@ -105,13 +107,26 @@ oilspill_count_sf <- CAcounties_oilspills_sf %>%
 
 ```{r plottingoilspills}
 
-ggplot(oilspill_count_sf) +
-  geom_sf(aes(oil_count)) +
+oilspill_heatmap <- ggplot(oilspill_count_sf) +
+  geom_sf(aes(fill = oil_count)) +
   scale_fill_gradientn(
-    colors = c("#E8ECE4","#EAD9BA", "#ECC78F", "#EEB465", "#DD3D0C")
+    colors = c("#E8ECE4", "#ECC78F", "#da600d", "#7C1B03")
     ) +
-  theme_void()
+  theme_void()+
+  labs(fill = "Oil Spill Incident Count")
 
+
+
+```
+
+```{r}
+
+oilspill_heatmap + plot_annotation(
+  title = 'Oil Spill Cloropleth Map',
+  subtitle = 'By CA County',
+  caption = "The top county for oil spill incidents is Los Angeles County."
+  
+)
 ```
 
 ## 
