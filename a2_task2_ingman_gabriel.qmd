@@ -53,34 +53,23 @@ hyperion_lines <- data.frame(hyperion_text) %>%
 
 ```
 
-```{r}
+```{r datacleaning}
 
 hyperion_booktext <- hyperion_lines %>% 
-  slice(-(1:178))
+  filter(between(page, 10, 552))
 
-hyperion_prologue <- hyperion_booktext %>% 
-  slice(-(10:16))
+hyperion_capital <- hyperion_booktext %>%
+  filter(text_full != "") %>% #Filtered out empty lines.
+  mutate(headings = str_detect(text_full, "EPILOGUE|PROLOGUE|TALE:|^[0-9]$")) #Detected the unique strings and number headings that signified either a chapter of the book or the stories nested within them.
 
-hyperion_chapter1 <- hyperion_booktext %>% 
-  slice(-(17:123))
+```
 
-hyperion_chapter2 <- hyperion_booktext %>% 
-  slice(-(122:206))
-
-hyperion_chapter3 <- hyperion_booktext %>% 
-  slice(-(207:271))
-
-hyperion_chapter4 <- hyperion_booktext %>% 
-  slice(-(272:359))
-
-hyperion_chapter5 <- hyperion_booktext %>% 
-  slice(-(360:471))
-
-hyperion_chapter6 <- hyperion_booktext %>% 
-  slice(-(17:123))
-
-hyperion_epilogue <- hyperion_booktext %>% 
-  slice(-(17:123))
+```{r chapters}
 
 
+hyperion_chapters <- hyperion_capital %>% 
+  mutate(chapter= ifelse(headings == TRUE, text_full, NA)) %>% 
+  fill(chapter, .direction = 'down') %>% 
+  mutate(chapter = fct_inorder(chapter))
+  
 ```
