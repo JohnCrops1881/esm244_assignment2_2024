@@ -22,6 +22,7 @@ library(tidytext)
 library(pdftools)
 library(ggwordcloud)
 library(here)
+library(patchwork)
 
 ```
 
@@ -34,6 +35,8 @@ library(here)
 This task is an exercise in text analysis. We were instructed to find our own text from the internet, analyse the entire text for its most common words (excluding stop words), and then perform a sentiment analysis.
 
 The data for this task comes from Dan Simmon's 1989 novel *Hyperion*. This is one of my favorite science fiction novels. It's one of the most vivid and imaginative science fiction novels of all time, and yet, it's also one of the most brilliant adaptations of Chaucer's *The Canterbury Tales* ever written. Warning: this book is twisted. It covers with a wide range of topics: war, religion, zealotry, technology, aristocracy, time travel, and colonialism. It was also written in the eighties.
+
+I set this data up for chapter-by-chapter analysis with blood, sweat, and tears. First, I read in my PDF text file, cleaning up any unnecessary spaces between words, and creating a tidy dataframe where each line of text is its own line. Then, I filtered out anything that wasn't the content of the book itself: the title page, about the author page, et cetera. Once that was in place, I performed some visual analysis and realized that each chapter either started with PROLOGUE, EPILOGUE, contained the string TALE:, or was a numerical value from 1 to 6. So I created a true/false column that flagged any lines of text in all caps, then wrote a normal expression that flagged any of the above conditions: the words PROLOGUE, EPILOGUE, or TALE: in all caps, or a numerical value on a line of its own. Then, once the hard part was done, I followed along with the Lab 4 tutorial to generate the following graphs and word clouds: a top five words by chapter graph, a top 100 wordcloud for the entire text, top 20 wordclouds for each chapter, and a positive / negative sentiment analysis. The positive / negative sentiment analysis was created by taking each chapter's ratio for positive and negative sentiments (compared against the book's overall positive / negative sentiment analysis) and graphing them on a bar chart.
 
 ```{r textsetup}
 
@@ -58,9 +61,11 @@ hyperion_lines <- data.frame(hyperion_text) %>%
 hyperion_booktext <- hyperion_lines %>% 
   filter(between(page, 10, 552))
 
+#Filtered out all of the pages that weren't book text: table of contents, about the author section, etc.
+
 hyperion_capital <- hyperion_booktext %>%
   filter(text_full != "") %>% #Filtered out empty lines.
-  mutate(headings = str_detect(text_full, "EPILOGUE|PROLOGUE|TALE:|^[0-9]$")) #Detected the unique strings and number headings that signified either a chapter of the book or the stories nested within them.
+  mutate(headings = str_detect(text_full, "EPILOGUE|PROLOGUE|TALE:|^[0-9]$")) #Detected the unique strings and number headings that signified either a chapter of the book or the stories nested within them. For the sake of simplicity, I'm considering each of the book's Tales as their own chapters, and will be creating word clouds and performing sentiment analysis on them instead of the larger chapters.
 
 ```
 
@@ -72,4 +77,221 @@ hyperion_chapters <- hyperion_capital %>%
   fill(chapter, .direction = 'down') %>% 
   mutate(chapter = fct_inorder(chapter))
   
+```
+
+```{r topchapterwords}
+
+hyperion_words <- hyperion_chapters %>% 
+  unnest_tokens(word, text_full) %>% 
+  select(-hyperion_text)
+
+hyperion_wordcount <- hyperion_words %>% 
+  count(chapter, word)
+
+clean_hyperion_wordcount <- hyperion_wordcount %>% 
+  anti_join(stop_words, by = 'word')
+
+```
+
+## Top Five Words by Chapter
+
+```{r wordanalysisbychapter}
+
+top_chapter_words <- clean_hyperion_wordcount %>% 
+  group_by(chapter) %>% 
+  arrange(-n) %>% 
+  slice(1:5) %>% 
+  ungroup()
+
+chapter_topwords_graph <- ggplot(data = top_chapter_words, aes(x = n, y = word)) +
+  geom_col(fill = "#B0AAA9") +
+  facet_wrap(~chapter, scales = "free")
+
+chapter_topwords_graph + plot_annotation(
+  title = "Top 5 Words by Chapter in Hyperion",
+  caption = "Makes sense that Consul is one of the top words in every chapter. He's the main character."
+  
+)
+
+
+```
+
+## Top 100 Words
+
+### Entire Text
+
+```{r top100words}
+
+top_100_words <- clean_hyperion_wordcount %>% 
+  arrange(-n) %>% 
+  slice(1:100)
+
+```
+
+```{r top100wordcloud}
+
+hyperion_top100_cloud <- ggplot(data = top_100_words, aes(label = word)) +
+  geom_text_wordcloud(aes(color = n, size = n), shape = 'diamond') +
+  scale_size_area(max_size = 10) +
+  scale_color_gradientn(colors = c("#B0AAA9", "#B6948E", '#B65443')) +
+  theme_minimal()
+
+hyperion_top100_cloud + plot_annotation(
+  title = 'Top 100 Words from Hyperion (Complete Text)'
+)
+
+```
+
+### Top 20 Words from Each Chapter
+
+```{r talewordcounts}
+
+#Toned it down from top 100 so they could actually all fit on my patchwork figure.
+
+priest_top20 <- clean_hyperion_wordcount %>% 
+  filter(chapter == 1) %>% 
+  arrange(-n) %>% 
+  slice(1:20)
+
+soldier_top20 <- clean_hyperion_wordcount %>% 
+  filter(chapter == 2) %>% 
+  arrange(-n) %>% 
+  slice(1:20)
+
+poet_top20 <- clean_hyperion_wordcount %>% 
+  filter(chapter == 3) %>% 
+  arrange(-n) %>% 
+  slice(1:20)
+
+scholar_top20 <- clean_hyperion_wordcount %>% 
+  filter(chapter == 4) %>% 
+  arrange(-n) %>% 
+  slice(1:20)
+
+detective_top20 <- clean_hyperion_wordcount %>% 
+  filter(chapter == 5) %>% 
+  arrange(-n) %>% 
+  slice(1:20)
+
+consul_top20 <- clean_hyperion_wordcount %>% 
+  filter(chapter == 6) %>% 
+  arrange(-n) %>% 
+  slice(1:20)
+
+
+```
+
+```{r generating graphs}
+
+priest_top20_cloud <- ggplot(data = priest_top20, aes(label = word)) +
+  geom_text_wordcloud(aes(color = n, size = n), shape = 'diamond') +
+  scale_size_area(max_size = 5) +
+  scale_color_gradientn(colors = c("#B0AAA9", "#B6948E", '#B65443')) +
+  theme_minimal()+
+  labs(title = 'The Priests Tale')
+
+soldier_top20_cloud <- ggplot(data = soldier_top20, aes(label = word)) +
+  geom_text_wordcloud(aes(color = n, size = n), shape = 'diamond') +
+  scale_size_area(max_size = 5) +
+  scale_color_gradientn(colors = c("#B0AAA9", "#B6948E", '#B65443')) +
+  theme_minimal()+
+  labs(title = 'The Soldiers Tale')
+
+poet_top20_cloud <- ggplot(data = poet_top20, aes(label = word)) +
+  geom_text_wordcloud(aes(color = n, size = n), shape = 'diamond') +
+  scale_size_area(max_size = 5) +
+  scale_color_gradientn(colors = c("#B0AAA9", "#B6948E", '#B65443')) +
+  theme_minimal()+
+  labs(title = 'The Poets Tale')
+
+scholar_top20_cloud <- ggplot(data = scholar_top20, aes(label = word)) +
+  geom_text_wordcloud(aes(color = n, size = n), shape = 'diamond') +
+  scale_size_area(max_size = 5) +
+  scale_color_gradientn(colors = c("#B0AAA9", "#B6948E", '#B65443')) +
+  theme_minimal()+
+  labs(title = 'The Scholars Tale')
+
+detective_top20_cloud <- ggplot(data = detective_top20, aes(label = word)) +
+  geom_text_wordcloud(aes(color = n, size = n), shape = 'diamond') +
+  scale_size_area(max_size = 5) +
+  scale_color_gradientn(colors = c("#B0AAA9", "#B6948E", '#B65443')) +
+  theme_minimal()+
+  labs(title = 'The Detectives Tale')
+
+consul_top20_cloud <- ggplot(data = consul_top20, aes(label = word)) +
+  geom_text_wordcloud(aes(color = n, size = n), shape = 'diamond') +
+  scale_size_area(max_size = 5) +
+  scale_color_gradientn(colors = c("#B0AAA9", "#B6948E", '#B65443')) +
+  theme_minimal() +
+  labs(title = 'The Consuls Tale')
+
+```
+
+```{r chapterwordcloudsdisplay}
+
+(priest_top20_cloud + plot_spacer() + soldier_top20_cloud) /
+(poet_top20_cloud + plot_spacer()+ scholar_top20_cloud) / 
+(detective_top20_cloud + plot_spacer() + consul_top20_cloud) +
+  plot_annotation(
+    title = 'Hyperion Tales: Top 20 Words',
+    theme = theme(plot.title = element_text(size = 18))
+  )
+
+```
+
+## Sentiment Analysis of Entire Text
+
+```{r getbing}
+
+bing_lex <- get_sentiments(lexicon = 'bing')
+
+hyperion_bing <- hyperion_words %>% 
+  inner_join(bing_lex, by = 'word')
+
+```
+
+```{r sentimentsscore}
+
+#Followed along from lab tutorial.
+
+bing_log_ratio_book <- hyperion_bing %>% 
+  summarize(n_pos = sum(sentiment == 'positive'),
+            n_neg = sum(sentiment == 'negative'),
+            log_ratio = log(n_pos / n_neg))
+
+bing_log_ratio_chapter <- hyperion_bing %>% 
+  group_by(chapter) %>% 
+  summarize(n_pos = sum(sentiment == 'positive'),
+            n_neg = sum(sentiment == 'negative'),
+            log_ratio = log(n_pos / n_neg)) %>%
+  mutate(log_ratio_adjust = log_ratio - bing_log_ratio_book$log_ratio) %>%
+  mutate(pos_neg = ifelse(log_ratio_adjust > 0, 'pos', 'neg'))
+
+```
+
+```{r sentimentgraph}
+
+#Followed along from lab tutorial.
+
+
+
+sentiment_graph <- ggplot(data = bing_log_ratio_chapter,
+                          aes(x = log_ratio_adjust,
+                              y = fct_rev(factor(chapter)),
+                              fill = pos_neg)) +
+                          geom_col() +
+  scale_fill_manual(values = c('pos' = '#B0AAA9', 'neg' = '#B65443')) +
+  theme_minimal() +
+  labs(x = "Adjusted Log Score (negative / positive)",
+       y = "Chapter") +
+  theme(legend.position = 'none')
+
+```
+
+```{r}
+
+sentiment_graph + plot_annotation(
+  title = 'Hyperion Sentiment Analysis by Chapter',
+  theme = theme(plot.title = element_text(size = 18))
+)
 ```
